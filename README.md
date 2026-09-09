@@ -78,6 +78,28 @@ pip install -r requirements.txt
 Copy-Item .env.example .env   # add GROQ_API_KEY
 ```
 
+## Tests
+
+```powershell
+python -m pytest tests
+```
+
+8 tests cover entity detection, deterministic placeholder assignment, the context
+block, and the mask → unmask round-trip (no external services required).
+
+## Test UI
+
+A Streamlit UI (`app.py`) lets you test masking interactively:
+
+```powershell
+streamlit run app.py
+```
+
+- **Mask** — paste text and see the masked output, model context, and mapping table.
+- **▶ Animate masking** — reveal text character-by-character, watching each PII value
+  flip to a placeholder live (with a speed slider).
+- **Unmask**, **LLM round-trip**, and **Custom entity** tabs cover the rest.
+
 Optional NER (names/orgs/locations) requires spaCy:
 
 ```powershell

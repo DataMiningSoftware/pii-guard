@@ -1,5 +1,9 @@
 """Streamlit UI for testing pii-guard."""
 
+import html
+import re
+import time
+
 import streamlit as st
 
 from pii_guard import Masker
@@ -13,10 +17,54 @@ SAMPLE = (
     "Call me again at jane.doe@example.com to confirm."
 )
 
+_PLACEHOLDER_RE = re.compile(r"\[[A-Z_]+\d+\]")
+
 
 @st.cache_resource
 def get_masker() -> Masker:
     return Masker()
+
+
+def _highlight(text: str) -> str:
+    """Escape text and colour the placeholders for display."""
+    esc = html.escape(text)
+    return _PLACEHOLDER_RE.sub(
+        lambda m: (
+            "<span style='color:#4ade80;background:#0d2818;padding:1px 6px;"
+            "border-radius:4px;font-weight:600'>" + m.group(0) + "</span>"
+        ),
+        esc,
+    )
+
+
+def animate_mask(text: str, sleep_s: float) -> Masker:
+    """Reveal the text character-by-character, masking live as PII completes."""
+    masker = get_masker()
+    box = st.empty()
+    bar = st.progress(0.0)
+    status = st.empty()
+    n = len(text)
+    seen_ph: set[str] = set()
+    for i in range(1, n + 1):
+        masked = masker.mask(text[:i])
+        active = set(masked.mapping) - seen_ph
+        seen_ph |= active
+        box.markdown(
+            "<div style='font-family:monospace;font-size:16px;line-height:1.7;"
+            "white-space:pre-wrap;word-break:break-word'>"
+            + _highlight(masked.text)
+            + "<span style='color:#5b8cff'>▌</span></div>",
+            unsafe_allow_html=True,
+        )
+        if active:
+            status.markdown(
+                "🔒 Detected: " + ", ".join(sorted(active))
+            )
+        bar.progress(i / n)
+        time.sleep(sleep_s)
+    bar.empty()
+    status.empty()
+    return masker.mask(text)
 
 
 st.title("🛡️ PII Guard — test the masker")
@@ -32,10 +80,20 @@ with tab_mask:
         height=160,
         help="Text to scan for PII / secrets.",
     )
-    if st.button("Mask", type="primary"):
-        masker = get_masker()
-        masked = masker.mask(text)
+    col_mask, col_anim, col_speed = st.columns([1, 1, 2])
+    do_mask = col_mask.button("Mask", type="primary")
+    do_anim = col_anim.button("▶ Animate masking", type="primary")
+    sleep_s = col_speed.slider("Speed (s/char)", 0.005, 0.15, 0.03, 0.005)
 
+    if do_anim:
+        with st.spinner("Animating..."):
+            masked = animate_mask(text, sleep_s)
+    elif do_mask:
+        masked = get_masker().mask(text)
+    else:
+        masked = None
+
+    if masked is not None:
         st.subheader("Masked text")
         st.code(masked.text)
 
@@ -48,7 +106,7 @@ with tab_mask:
                 {"Placeholder": ph, "Type": e.key, "Label": e.label, "Value": e.value}
                 for ph, e in sorted(masked.mapping.items())
             ]
-            st.dataframe(rows, use_container_width=True)
+            st.dataframe(rows, width="stretch")
         else:
             st.info("No PII detected.")
 
