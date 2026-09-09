@@ -1,5 +1,6 @@
 openai
 python-dotenv
+streamlit
 
 # Optional NER (names / organizations / locations)
 # spacy
