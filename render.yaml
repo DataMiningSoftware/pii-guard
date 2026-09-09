@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: pii-guard
+    runtime: docker
+    plan: free
+    healthCheckPath: /_stcore/health
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false
+        required: false

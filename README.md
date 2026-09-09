@@ -87,6 +87,19 @@ python -m pytest tests
 8 tests cover entity detection, deterministic placeholder assignment, the context
 block, and the mask → unmask round-trip (no external services required).
 
+## Deploy
+
+The app is a Streamlit UI, so it deploys anywhere Streamlit runs. Fastest options:
+
+- **Streamlit Community Cloud** (free, zero config) — connect this repo (it's public)
+  and point it at `app.py`.
+- **Render** — the included [`render.yaml`](render.yaml) blueprint + [`Dockerfile`](Dockerfile)
+  deploy it as a free web service.
+- **Railway / Fly.io** — use the same `Dockerfile`.
+
+`GROQ_API_KEY` is optional: the masking UI works without it; only the *LLM
+round-trip* tab needs the key.
+
 ## Test UI
 
 A Streamlit UI (`app.py`) lets you test masking interactively:
